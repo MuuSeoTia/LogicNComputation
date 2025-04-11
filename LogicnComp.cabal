@@ -48,8 +48,14 @@ executable LogicnComp-exe
       app
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      LogicnComp
-    , base >=4.7 && <5
+      LogicnComp,
+      base >=4.7 && <5,
+      aeson,
+      bytestring,
+      containers,
+      QuickCheck,
+      text,
+      generic-random
   default-language: Haskell2010
 
 test-suite LogicnComp-test
@@ -66,5 +72,9 @@ test-suite LogicnComp-test
       LogicnComp
     , base >=4.7 && <5
     , QuickCheck >=2.14
+    , aeson
+    , bytestring
+    , text
+    , generic-random
   default-language: Haskell2010
 
