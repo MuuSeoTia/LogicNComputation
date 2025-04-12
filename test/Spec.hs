@@ -73,23 +73,32 @@ prop_json student =
     Just student == (deserialize . serialize) student
 
 -- B3
--- Color type data definitions
+
+-- enumeration for finite number of colors 
 data NamedColor
     = Red | Blue | Green | Yellow | Purple | Black
-    deriving(Show, Enum, Eq, Bounded)
+    deriving (Show, Enum, Eq, Bounded)
 
+-- Data type representing three possible color formats:
+--   - Named (from the NamedColor enumeration)
+--   - RGB (Red, Green, Blue values: 0-255)
+--   - CMYK (Cyan, Magenta, Yellow, Black values: 0–255)
 data Color
   = Named NamedColor
   | RGB Int Int Int
   | CMYK Int Int Int Int
   deriving (Eq, Show)
 
+-- converts a Color value to a packed list of integers:
+--   - 0 indicates a NamedColor
+--   - 1 indicates an RGB color
+--   - 2 indicates a CMYK color
 packColor :: Color -> [Int]
 packColor (Named c) = 0 : [fromEnum c]
 packColor (RGB r g b) = 1 : [r, g, b]
 packColor (CMYK c m y k) = 2 : [c, m, y, k]
 
-
+-- unpacks a list of integers into a Color value if valid
 unpackColor :: [Int] -> Either String Color
 unpackColor (0 : [n])
   | n >= fromEnum (minBound :: NamedColor) && n <= fromEnum (maxBound :: NamedColor)
@@ -103,31 +112,35 @@ unpackColor (2 : [c, m, y, k])
   | otherwise = Left "CMYK values out of range"
 unpackColor _ = Left "Invalid value tag"
 
+-- helper function to check if an individual color component is in proper range 
 inRange :: Int -> Bool
 inRange x = x >= 0 && x <= 255
 
+-- arbitrary instance for NamedColor: generates any defined NamedColor value (contract-generate)
 instance Arbitrary NamedColor where
-  arbitrary = elements[minBound .. maxBound]
+  arbitrary = elements [minBound .. maxBound]
 
+-- arbitrary instance for Color: generates random values from RGB, CMYK, or NamedColor (contract-generate)
 instance Arbitrary Color where 
   arbitrary = oneof
-    [
-      RGB <$> range <*> range <*> range, 
-      CMYK  <$> range <*> range <*> range <*> range, 
-      Named <$> arbitrary
+    [ RGB <$> range <*> range <*> range
+    , CMYK <$> range <*> range <*> range <*> range
+    , Named <$> arbitrary
     ] 
-    where range = choose(0, 255) 
+    where range = choose (0, 255)
 
+-- packing and then unpacking a Color should return the original color
 prop_inverse_color :: Color -> Bool
 prop_inverse_color c = unpackColor (packColor c) == Right c
 
+-- if a list of integers decodes to a valid Color, then re-packing and unpacking it should preserve it
 prop_color_cycle :: [Int] -> Bool
 prop_color_cycle list =
   case unpackColor list of
     Right c -> unpackColor (packColor c) == Right c
-    Left _ -> True
+    Left _  -> True
 
--- test suite (this all counts as one test though based on the number of OKs, (you can see all the properties being tested in the terminal)
+--  Main test-suite
 main :: IO ()
 main = do
      quickCheck (prop_sort :: [Int] -> Bool)
