@@ -11,6 +11,7 @@ import Data.List (sort, deleteBy)
 import Prelude 
 import qualified Data.ByteString.Lazy as BL
 import GHC.Enum (Bounded(minBound, maxBound))
+import Data.Text.IO (putStrLn)
 
 -- B1
 
@@ -104,6 +105,7 @@ unpackColor (2 : [c, m, y, k])
   | otherwise = Left "CMYK values out of range"
 unpackColor _ = Left "Invalid value tag"
 
+
 inRange :: Int -> Bool
 inRange x = x >= 0 && x <= 255
 
@@ -119,8 +121,16 @@ instance Arbitrary Color where
     ] 
     where range = choose(0, 255) 
 
-prop_color :: Color -> Bool
-prop_color c = unpackColor (packColor c) == Right c
+
+prop_inverse_color :: Color -> Bool
+prop_inverse_color c = 
+    packColor . (unpackColor c) == Right c
+
+prop_color_cycle :: [Int] -> Bool
+prop_color_cycle list =
+  case unpackColor list of
+    Right c -> unpackColor (packColor c) == Right c
+    Left _ -> True
 
 -- test suite (this all counts as one test though based on the number of OKs, (you can see all the properties being tested in the terminal)
 main :: IO ()
@@ -131,4 +141,5 @@ main = do
      quickCheck (prop_append :: [String] -> String -> Bool)
      quickCheck (prop_append :: [Bool] -> Bool -> Bool)
      quickCheck (prop_json :: StudentDB -> Bool)
-     quickCheck (prop_color :: Color -> Bool)
+     quickCheck (prop_color_cycle :: [Int] -> Bool)
+     quickCheck (prop_inverse_color :: Color -> Bool)
