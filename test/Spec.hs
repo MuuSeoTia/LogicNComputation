@@ -5,10 +5,12 @@
 import Test.QuickCheck
 import Data.Aeson (ToJSON(..), FromJSON(..), encode, decode)
 import GHC.Generics
-import Data.Bool (Bool)
+import GHC.Enum
+import Data.Bool (Bool(..))
 import Data.List (sort, deleteBy)
 import Prelude 
 import qualified Data.ByteString.Lazy as BL
+import GHC.Enum (Bounded(minBound, maxBound))
 
 -- B1
 
@@ -70,6 +72,56 @@ prop_json :: StudentDB -> Bool
 prop_json student = 
     Just student == (deserialize . serialize) student
 
+-- B3
+-- Color type data definitions
+
+data NamedColor
+    = Red | Blue | Green | Yellow | Purple | Black
+    deriving(Show, Enum, Eq, Bounded)
+
+data Color
+  = Named NamedColor
+  | RGB Int Int Int
+  | CMYK Int Int Int Int
+  deriving (Eq, Show)
+
+
+packColor :: Color -> [Int]
+packColor(RGB r g b) = 0: [r, g, b]
+packColor (CMYK c m y k) = 1 : [c, m, y, k]
+packColor (Named c) = 2: [fromEnum c]
+
+unpackColor :: [Int] -> Either String Color
+unpackColor (0 : [n])
+  | n >= fromEnum (minBound :: NamedColor) && n <= fromEnum (maxBound :: NamedColor)
+  = Right $ Named (toEnum n)
+  | otherwise = Left "Invalid named color tag"
+unpackColor (1 : [r, g, b])
+  | all inRange [r, g, b] = Right $ RGB r g b
+  | otherwise = Left "RGB values out of range"
+unpackColor (2 : [c, m, y, k])
+  | all inRange [c, m, y, k] = Right $ CMYK c m y k
+  | otherwise = Left "CMYK values out of range"
+unpackColor _ = Left "Invalid value tag"
+
+inRange :: Int -> Bool
+inRange x = x >= 0 && x <= 255
+
+instance Arbitrary NamedColor where
+  arbitrary = elements[minBound .. maxBound]
+
+instance Arbitrary Color where 
+  arbitrary = oneof
+    [
+      RGB <$> range <*> range <*> range
+    , CMYK  <$> range <*> range <*> range <*> range
+    , Named <$> arbitrary
+    ] 
+    where range = choose(0, 255) 
+
+prop_color :: Color -> Bool
+prop_color c = unpackColor (packColor c) == Right c
+
 -- test suite (this all counts as one test though based on the number of OKs, (you can see all the properties being tested in the terminal)
 main :: IO ()
 main = do
@@ -79,3 +131,4 @@ main = do
      quickCheck (prop_append :: [String] -> String -> Bool)
      quickCheck (prop_append :: [Bool] -> Bool -> Bool)
      quickCheck (prop_json :: StudentDB -> Bool)
+     quickCheck (prop_color :: Color -> Bool)
