@@ -1,7 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
 
 import Test.QuickCheck
@@ -72,7 +70,7 @@ prop_json :: StudentDB -> Bool
 prop_json student = 
     Just student == (deserialize . serialize) student
 
--- test suite (this all counts as one test though based on the number of OKs, you can see all the properties being tested)
+-- test suite (this all counts as one test though based on the number of OKs, (you can see all the properties being tested in the terminal)
 main :: IO ()
 main = do
      quickCheck (prop_sort :: [Int] -> Bool)
