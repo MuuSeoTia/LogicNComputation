@@ -11,7 +11,6 @@ import Data.List (sort, deleteBy)
 import Prelude 
 import qualified Data.ByteString.Lazy as BL
 import GHC.Enum (Bounded(minBound, maxBound))
-import Data.Text.IO (putStrLn)
 
 -- B1
 
@@ -75,7 +74,6 @@ prop_json student =
 
 -- B3
 -- Color type data definitions
-
 data NamedColor
     = Red | Blue | Green | Yellow | Purple | Black
     deriving(Show, Enum, Eq, Bounded)
@@ -86,11 +84,11 @@ data Color
   | CMYK Int Int Int Int
   deriving (Eq, Show)
 
-
 packColor :: Color -> [Int]
-packColor(RGB r g b) = 0: [r, g, b]
-packColor (CMYK c m y k) = 1 : [c, m, y, k]
-packColor (Named c) = 2: [fromEnum c]
+packColor (Named c) = 0 : [fromEnum c]
+packColor (RGB r g b) = 1 : [r, g, b]
+packColor (CMYK c m y k) = 2 : [c, m, y, k]
+
 
 unpackColor :: [Int] -> Either String Color
 unpackColor (0 : [n])
@@ -105,7 +103,6 @@ unpackColor (2 : [c, m, y, k])
   | otherwise = Left "CMYK values out of range"
 unpackColor _ = Left "Invalid value tag"
 
-
 inRange :: Int -> Bool
 inRange x = x >= 0 && x <= 255
 
@@ -115,16 +112,14 @@ instance Arbitrary NamedColor where
 instance Arbitrary Color where 
   arbitrary = oneof
     [
-      RGB <$> range <*> range <*> range
-    , CMYK  <$> range <*> range <*> range <*> range
-    , Named <$> arbitrary
+      RGB <$> range <*> range <*> range, 
+      CMYK  <$> range <*> range <*> range <*> range, 
+      Named <$> arbitrary
     ] 
     where range = choose(0, 255) 
 
-
 prop_inverse_color :: Color -> Bool
-prop_inverse_color c = 
-    packColor . (unpackColor c) == Right c
+prop_inverse_color c = unpackColor (packColor c) == Right c
 
 prop_color_cycle :: [Int] -> Bool
 prop_color_cycle list =
